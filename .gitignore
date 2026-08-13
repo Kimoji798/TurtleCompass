@@ -3,3 +3,4 @@ ios/
 android/
 .DS_Store
 npm-debug.log*
+deploy-log.txt
