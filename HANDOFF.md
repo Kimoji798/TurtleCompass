@@ -24,6 +24,7 @@
 - `.github/workflows/pages.yml` — GitHub Pages 自动部署工作流（源目录 `www/`）
 - `make-icon.py` + `icon-1024.png` — App 图标生成脚本与源图
 - `www/icon-1024.png` / `www/icon-180.png` / `www/favicon-32.png` — 各尺寸图标
+- `www/manifest.webmanifest` + `www/sw.js` — PWA 说明与离线缓存（安卓安装成 App / iOS 添加到主屏幕）
 - `capacitor.config.json` / `package.json` — Capacitor 原生封装配置（appId `com.turtleworks.turtlecompass`）
 - `CLAUDE.md` — 项目级 AI 指引；`README.md` — 人类可读说明；`commit-msg.txt` — 部署脚本用的提交信息模板
 
@@ -47,9 +48,11 @@
     - `Branch "main" is not allowed to deploy due to environment protection rules` → 用户曾手动给仓库环境 `github-pages` 设置 main 分支保护规则，需删除/放行（仓库 Settings → Environments）
     - `Node.js 20 is deprecated` → 无害警告，不影响部署
 12. **部署成功但方向仍无法启用** → 加入 iOS 13+ `DeviceOrientationEvent.requestPermission()` 权限流程，黄色按钮点击触发系统权限弹窗。
-14. **底部白边 + 图标 + 表盘位置 + 城市区域**（2026-08-13）：修复界面底部白色区域（html/body 固定黑底）；图标重设计为简约风格；表盘上移 14px；表盘下方新增当前城市区域显示（逆地理编码，见第 6 节）。
+14. **底部白边 + 图标 + 表盘位置 + 城市区域**（2026-08-13）：修复界面底部白色区域（html/body 固定黑底）；图标重设计为简约风格；表盘上移 14px；表盘下方新增当前城市区域显示（逆地理编码，见第 6 节）；后续字号调至 25px 白色。
 
 13. **打开要等 + 每次点黄色按钮** → 本轮优化：打开自动请求权限 + `localStorage` 记忆授权 + 2.5 秒兜底按钮（详见第 5 节）；同时海拔字体 22→25px、经纬度 17→19px、经纬间隔 2→3 空格；新增 App 图标（详见第 7 节）。
+
+15. **安卓能否打开 / 下载成 App**（2026-08-13）→ 链接本身安卓 Chrome/Edge 可直接打开；为支持「安装成 App」增加 PWA：`www/index.html` 加 manifest 链接与 Service Worker 注册，新增 `www/manifest.webmanifest`（standalone 全屏、黑底、icon-180/icon-1024）与 `www/sw.js`（ttcompass-v1 缓存，网络优先+缓存回退，离线可开）。安卓 Chrome 菜单「安装应用」，iPhone Safari「分享→添加到主屏幕」。
 
 对应提交（`git log --oneline --reverse`）：`dc7032c`(v0.1 发布) → `73bff83`/`affe325`/`3c4f615`/`a8b0c80`(部署修复系列) → `2a33f9a`(方向权限修复) → `42d9a2e`(权限优化+图标) → `f14cfe1`(权限兜底按钮)。
 
@@ -72,7 +75,7 @@
 - 配色：黑底 `#000`，标签灰、警示黄 `#ffd60a`（同启用按钮）、错误红 `#ff453a`
 - 底部白边修复：`html, body` 固定黑色背景（曾出现界面底部白色区域，是 html 默认白底露出）
 - 表盘整体上移 14px（`.compass-stage { margin-top: -14px }`）
-- 表盘下方 `.city-line` 显示当前城市区域：BigDataCloud 逆地理编码为主、Nominatim 兜底；定位精度 >1200m 时不解析，避免首次定位误差显示错城市；字号 24px（用户三次要求调大）；`margin-top: 48px` 整体下移约 2 行（用户两次要求下移）
+- 表盘下方 `.city-line` 显示当前城市区域：BigDataCloud 逆地理编码为主、Nominatim 兜底；定位精度 >1200m 时不解析，避免首次定位误差显示错城市；字号 25px 白色（用户要求调大并改白）；`margin-top: 48px` 整体下移约 2 行（用户两次要求下移）
 - 打开即运行：无启动按钮、无遮罩；页内 `window.onerror` 把 JS 错误显示到表盘下方提示区，便于真机排查
 
 ## 7. App 图标

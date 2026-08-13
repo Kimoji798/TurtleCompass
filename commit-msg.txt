@@ -1,3 +1,6 @@
-﻿主要变化:城市区域字号再调大
+﻿主要变化:城市区域 25px 白色 + 增加 PWA 安装支持
 
-- 城市区域字号 20px -> 24px，行高同步加大
+- 城市区域字号 24->25px、颜色灰改白、行高同步
+- www/index.html 增加 manifest 链接与 service worker 注册
+- 新增 www/manifest.webmanifest（指南龟，standalone 全屏，黑底，icon-180/icon-1024）
+- 新增 www/sw.js（ttcompass-v1 缓存，网络优先+缓存回退，离线可开）

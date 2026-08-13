@@ -10,6 +10,7 @@
   <link rel="apple-touch-icon" href="icon-180.png">
   <link rel="icon" type="image/png" href="icon-180.png">
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+  <link rel="manifest" href="manifest.webmanifest">
   <style>
 :root {
   --bg: #000000;
@@ -138,9 +139,9 @@ body {
 
 .city-line {
   margin-top: 48px;
-  min-height: 28px;
-  font-size: 24px;
-  color: var(--label);
+  min-height: 29px;
+  font-size: 25px;
+  color: #ffffff;
   letter-spacing: 1px;
 }
 
@@ -733,6 +734,10 @@ body {
     } else {
       startCompass();
     }
+  }
+
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("./sw.js");
   }
 
   init();
