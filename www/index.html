@@ -7,6 +7,9 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="指南龟">
   <title>指南龟</title>
+  <link rel="apple-touch-icon" href="icon-180.png">
+  <link rel="icon" type="image/png" href="icon-180.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
   <style>
 :root {
   --bg: #000000;
@@ -174,13 +177,14 @@ body {
 
 .readout .value {
   color: var(--text);
-  font-size: 22px;
+  font-size: 25px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
 .readout .coords {
-  font-size: 17px;
+  font-size: 19px;
+  white-space: pre;
   font-weight: 500;
 }
 
@@ -560,7 +564,7 @@ body {
     }
 
     if (typeof coords.latitude === "number" && typeof coords.longitude === "number") {
-      els.coordinates.textContent = dms(coords.latitude, "N", "S") + "  " + dms(coords.longitude, "E", "W");
+      els.coordinates.textContent = dms(coords.latitude, "N", "S") + "   " + dms(coords.longitude, "E", "W");
       els.coordinatesDecimal.textContent = coords.latitude.toFixed(5) + ", " + coords.longitude.toFixed(5);
       if (typeof coords.accuracy === "number" && coords.accuracy !== null) {
         els.coordinatesDecimal.textContent += "（约 ±" + Math.round(coords.accuracy) + " 米）";
@@ -595,7 +599,19 @@ body {
     });
   }
 
-    /* ---------- 方向权限 ---------- */
+      /* ---------- 方向权限 ---------- */
+  var GRANT_FLAG = "ttcompass-orientation-granted";
+
+  function rememberGrant() {
+    try { localStorage.setItem(GRANT_FLAG, "1"); } catch (ignore) {}
+  }
+
+  function wasGrantedBefore() {
+    try { return localStorage.getItem(GRANT_FLAG) === "1"; } catch (ignore) {
+      return false;
+    }
+  }
+
   function hasRequestPermission() {
     return typeof DeviceOrientationEvent !== "undefined" &&
       typeof DeviceOrientationEvent.requestPermission === "function";
@@ -613,6 +629,14 @@ body {
     els.enableBtn.classList.remove("visible");
   }
 
+  function scheduleNoDataCheck() {
+    window.setTimeout(function () {
+      if (heading === null && !demoMode) {
+        showHint("转动手机获取方向；若仍无反应，请检查 Safari 网站设置", "action");
+      }
+    }, 6000);
+  }
+
   function onEnableClick() {
     hideEnableButton();
     if (!hasRequestPermission()) {
@@ -621,13 +645,10 @@ body {
     }
     DeviceOrientationEvent.requestPermission().then(function (state) {
       if (state === "granted") {
+        rememberGrant();
         orientationState = "granted";
         showHint("", null);
-        window.setTimeout(function () {
-          if (heading === null && !demoMode) {
-            showHint("未收到罗盘数据：请在 Safari 网站设置中允许「运动与方向」", "error");
-          }
-        }, 8000);
+        scheduleNoDataCheck();
       } else if (state === "denied") {
         orientationState = "denied";
         showHint("权限被拒绝：Safari 地址栏点 aA → 网站设置 允许，或清除网站数据后重试", "error");
@@ -650,27 +671,35 @@ body {
       return;
     }
 
-    var checkTimer = window.setInterval(function () {
-      if (heading !== null || demoMode) {
-        window.clearInterval(checkTimer);
-        hideEnableButton();
-        return;
-      }
-      checkCount += 1;
-      if (checkCount === 1 && hasRequestPermission()) {
-        showEnableButton();
-      }
-      if (checkCount >= 3) {
-        window.clearInterval(checkTimer);
-        if (!hasRequestPermission()) {
-          showHint("未检测到方向：请检查权限，或改用 Safari 打开", "error");
-        } else if (orientationState === "granted") {
-          showHint("未收到罗盘数据：请在 Safari 网站设置中允许「运动与方向」", "error");
-        } else if (orientationState === "denied") {
+    // 已授权过：直接监听事件，不弹任何按钮
+    if (wasGrantedBefore()) {
+      orientationState = "granted";
+      scheduleNoDataCheck();
+      return;
+    }
+
+    if (hasRequestPermission()) {
+      DeviceOrientationEvent.requestPermission().then(function (state) {
+        if (state === "granted") {
+          rememberGrant();
+          orientationState = "granted";
+          scheduleNoDataCheck();
+        } else if (state === "denied") {
+          orientationState = "denied";
           showHint("权限被拒绝：Safari 地址栏点 aA → 网站设置 允许，或清除网站数据后重试", "error");
+        } else {
+          showEnableButton();
         }
-      }
-    }, 3000);
+      }).catch(function () {
+        showEnableButton();
+      });
+    } else {
+      window.setTimeout(function () {
+        if (heading === null && !demoMode) {
+          showHint("未检测到方向：请检查权限，或改用 Safari 打开", "error");
+        }
+      }, 9000);
+    }
   }
 
   /* ---------- 演示模式（桌面预览） ---------- */
