@@ -204,7 +204,23 @@ body {
   color: #ff453a;
   font-size: 14px;
   font-weight: 600;
-}  </style>
+}  .enable-btn {
+  display: none;
+  margin-top: 10px;
+  padding: 12px 30px;
+  border: 0;
+  border-radius: 999px;
+  background: #ffd60a;
+  color: #000000;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.enable-btn.visible {
+  display: inline-block;
+}
+
+  </style>
 </head>
 <body>
   <div id="app">
@@ -422,6 +438,7 @@ body {
         <div class="pointer" aria-hidden="true"></div>
       </div>
       <div class="level-hint" id="levelHint">将手机水平放置</div>
+        <button id="enableBtn" class="enable-btn" type="button">点击启用方向</button>
     </main>
 
     <footer class="readout">
@@ -453,6 +470,7 @@ body {
     altitude: document.getElementById("altitude"),
     coordinates: document.getElementById("coordinates"),
     coordinatesDecimal: document.getElementById("coordinatesDecimal"),
+    enableBtn: document.getElementById("enableBtn"),
     levelHint: document.getElementById("levelHint")
   };
 
@@ -577,87 +595,80 @@ body {
     });
   }
 
-  /* ---------- 方向权限 ---------- */
+    /* ---------- 方向权限 ---------- */
   function hasRequestPermission() {
     return typeof DeviceOrientationEvent !== "undefined" &&
       typeof DeviceOrientationEvent.requestPermission === "function";
   }
 
-  function requestOrientationPermission() {
-    return DeviceOrientationEvent.requestPermission().then(function (state) {
-      orientationState = state;
-      return state;
-    }).catch(function () {
-      return "error";
-    });
-  }
-
-  function handlePermissionResult(result) {
-    if (result === "granted") {
-      showHint("", null);
-    } else if (result === "denied") {
-      showHint("方向权限被拒绝：请在系统设置中允许，或改用 Safari 打开", "error");
-    } else {
-      bindGestureFallback();
-    }
-  }
-
-  function bindGestureFallback() {
-    if (gestureBound) {
+  function showEnableButton() {
+    if (heading !== null || demoMode) {
       return;
     }
-    gestureBound = true;
-    showHint("轻触屏幕任意位置以启用方向", "action");
-    window.addEventListener("pointerdown", onFirstGesture, { once: true, passive: true });
-    window.addEventListener("touchstart", onFirstGesture, { once: true, passive: true });
+    els.enableBtn.classList.add("visible");
+    showHint("点击下方黄色按钮，允许「运动与方向」权限", "action");
   }
 
-  function onFirstGesture() {
-    if (hasRequestPermission()) {
-      requestOrientationPermission().then(function (result) {
-        if (result !== "granted") {
-          showHint("方向无法启用：请检查系统设置与网站权限，或改用 Safari 打开", "error");
-        } else {
-          showHint("", null);
-        }
-      });
-    }
+  function hideEnableButton() {
+    els.enableBtn.classList.remove("visible");
   }
 
-  function showFinalHint() {
-    if (window.isSecureContext === false) {
-      showHint("当前页面不是 HTTPS，方向被浏览器拦截：请用 GitHub Pages 部署地址打开", "error");
-    } else if (typeof DeviceOrientationEvent === "undefined") {
+  function onEnableClick() {
+    hideEnableButton();
+    if (!hasRequestPermission()) {
       showHint("当前浏览器不支持方向传感器，请用 Safari 打开", "error");
-    } else if (sawOrientationEvent && !sawCompassData) {
-      showHint("浏览器未提供罗盘数据，请用 Safari 打开", "error");
-    } else if (orientationState === "denied") {
-      showHint("方向权限被拒绝：请在系统设置中允许，或改用 Safari 打开", "error");
-    } else if (hasRequestPermission()) {
-      bindGestureFallback();
-    } else {
-      showHint("未检测到方向：请检查权限，或改用 Safari 打开", "error");
+      return;
     }
+    DeviceOrientationEvent.requestPermission().then(function (state) {
+      if (state === "granted") {
+        orientationState = "granted";
+        showHint("", null);
+        window.setTimeout(function () {
+          if (heading === null && !demoMode) {
+            showHint("未收到罗盘数据：请在 Safari 网站设置中允许「运动与方向」", "error");
+          }
+        }, 8000);
+      } else if (state === "denied") {
+        orientationState = "denied";
+        showHint("权限被拒绝：Safari 地址栏点 aA → 网站设置 允许，或清除网站数据后重试", "error");
+      } else {
+        showEnableButton();
+      }
+    }).catch(function () {
+      showEnableButton();
+    });
   }
 
   function startCompass() {
     startGeolocation();
     window.addEventListener("deviceorientation", onOrientation, true);
     window.addEventListener("deviceorientationabsolute", onOrientation, true);
+    els.enableBtn.addEventListener("click", onEnableClick);
 
-    if (hasRequestPermission()) {
-      requestOrientationPermission().then(handlePermissionResult);
+    if (typeof DeviceOrientationEvent === "undefined") {
+      showHint("当前浏览器不支持方向传感器，请用 Safari 打开", "error");
+      return;
     }
 
     var checkTimer = window.setInterval(function () {
       if (heading !== null || demoMode) {
         window.clearInterval(checkTimer);
+        hideEnableButton();
         return;
       }
       checkCount += 1;
+      if (checkCount === 1 && hasRequestPermission()) {
+        showEnableButton();
+      }
       if (checkCount >= 3) {
         window.clearInterval(checkTimer);
-        showFinalHint();
+        if (!hasRequestPermission()) {
+          showHint("未检测到方向：请检查权限，或改用 Safari 打开", "error");
+        } else if (orientationState === "granted") {
+          showHint("未收到罗盘数据：请在 Safari 网站设置中允许「运动与方向」", "error");
+        } else if (orientationState === "denied") {
+          showHint("权限被拒绝：Safari 地址栏点 aA → 网站设置 允许，或清除网站数据后重试", "error");
+        }
       }
     }, 3000);
   }
