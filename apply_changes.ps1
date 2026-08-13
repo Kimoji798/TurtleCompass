@@ -16,12 +16,12 @@ $c = [IO.File]::ReadAllText($p, [Text.Encoding]::UTF8)
 
 $needPwa = -not ($c.Contains('rel="manifest"') -and (Test-Path $manifestPath) -and (Test-Path $swPath))
 
-$oldCity = ".city-line {`n  margin-top: 48px;`n  min-height: 28px;`n  font-size: 24px;`n  color: var(--label);`n  letter-spacing: 1px;`n}"
-$newCity = ".city-line {`n  margin-top: 48px;`n  min-height: 29px;`n  font-size: 25px;`n  color: #ffffff;`n  letter-spacing: 1px;`n}"
+$oldCity = ".city-line {`n  margin-top: 48px;`n  min-height: 29px;`n  font-size: 25px;`n  color: #ffffff;`n  letter-spacing: 1px;`n}"
+$newCity = ".city-line {`n  margin-top: 48px;`n  min-height: 29px;`n  font-size: 25px;`n  color: var(--label);`n  letter-spacing: 1px;`n}"
 $cityCount = Count-Str $c $oldCity
 $needCity = $cityCount -ge 1
 
-if (-not $needPwa -and -not $needCity) { Write-Host "已经是最新（城市区域 25px 白色 + PWA 都已就绪），无需修改"; Read-Host "按回车关闭"; exit 0 }
+if (-not $needPwa -and -not $needCity) { Write-Host "已经是最新（城市区域已改回灰色），无需修改"; Read-Host "按回车关闭"; exit 0 }
 
 if ($needCity) {
   if ($cityCount -ne 1) { Write-Host "锚点校验失败：城市区域样式块不唯一，未做任何修改。请把本窗口内容发给 Codex"; Read-Host "按回车关闭"; exit 1 }
@@ -68,7 +68,7 @@ if ($needPwa) {
 
 Write-Host ""
 Write-Host "修改完成："
-if ($needCity) { Write-Host "  - 城市区域字号 24px -> 25px，颜色改为白色" }
+if ($needCity) { Write-Host "  - 城市区域颜色白色改回默认灰色（字号保持 25px）" }
 if ($needPwa) {
   Write-Host "  - www/index.html：manifest 链接 + Service Worker 注册"
   Write-Host "  - 新增 www/manifest.webmanifest、www/sw.js（离线缓存，断网也能打开）"
