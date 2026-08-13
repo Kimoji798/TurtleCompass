@@ -26,7 +26,7 @@
 ## 关键实现约定
 
 - 打开即自动运行：无启动按钮/遮罩，页面加载后直接启动定位与方向监听。
-- 表盘为**内联静态 SVG**（刻度、度数、北东南西），JS 只负责旋转与数据更新，避免 JS 生成 SVG 失败导致表盘空白；中间红色指针在独立固定层，不随表盘旋转、始终指向手机顶端。
+- 表盘为**内联静态 SVG**（刻度、度数、北东南西），JS 只负责旋转与数据更新，避免 JS 生成 SVG 失败导致表盘空白；中间红/灰指针在独立固定层，不随表盘旋转、始终指向手机顶端，长度已缩短避免遮挡文字；表盘顶部白色指示线（向下小箭头）已按用户要求删除。
 - 方向：优先用 iOS Safari 的 `webkitCompassHeading`，Android 兜底 `deviceorientationabsolute.alpha`。
 - 定位：原生 `navigator.geolocation.watchPosition`，`coords.altitude` 取海拔。
 - 坐标：度分秒（DMS）+ 十进制度双显示。
