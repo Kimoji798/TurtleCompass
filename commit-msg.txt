@@ -1,4 +1,3 @@
-主要变化:修复 GitHub Pages 部署失败
+主要变化:修复工作流非法权限字段
 
-- configure-pages 增加 enablement 自动启用 Pages
-- 补充 administration 写入权限
+- 移除 permissions 中不支持的 administration 项
