@@ -1,5 +1,4 @@
-主要变化:指南龟 v0.1 发布
+主要变化:修复 GitHub Pages 部署失败
 
-- 单文件指南针应用(方向/海拔/经纬度)
-- GitHub Pages 自动部署工作流
-- 一键启动服务器与部署脚本
+- configure-pages 增加 enablement 自动启用 Pages
+- 补充 administration 写入权限
