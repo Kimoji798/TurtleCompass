@@ -26,11 +26,11 @@
 ## 关键实现约定
 
 - 打开即自动运行：无启动按钮/遮罩，页面加载后直接启动定位与方向监听。
-- 表盘为**内联静态 SVG**（刻度、度数、北东南西），JS 只负责旋转与数据更新，避免 JS 生成 SVG 失败导致表盘空白；中间红色指针在独立固定层，不随表盘旋转、始终指向手机顶端。
+- 表盘为**内联静态 SVG**（刻度、度数、北东南西、红白指北针），JS 只负责旋转与数据更新，避免 JS 生成 SVG 失败导致表盘空白。
 - 方向：优先用 iOS Safari 的 `webkitCompassHeading`，Android 兜底 `deviceorientationabsolute.alpha`。
 - 定位：原生 `navigator.geolocation.watchPosition`，`coords.altitude` 取海拔。
 - 坐标：度分秒（DMS）+ 十进制度双显示。
-- 每次打开都显示黄色按钮，点击后才调用 iOS 13+ 的 `DeviceOrientationEvent.requestPermission()` 并绑定方向事件；无自动请求、无 localStorage 授权记忆（用户明确要求每次点击）。
+- iOS 13+ 的 `DeviceOrientationEvent.requestPermission()` 若未自动授予，会在首次轻触屏幕时重新请求（无遮挡按钮）。
 - 页内 `window.onerror` 会把 JS 运行错误显示到表盘下方的提示区，便于真机排查。
 - 定位/方向可能需要安全上下文（HTTPS 或 localhost），HTTP 局域网地址可能被浏览器拦截。
 

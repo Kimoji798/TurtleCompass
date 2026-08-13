@@ -117,21 +117,6 @@ body {
   height: 100%;
   display: block;
 }
-.needle {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 2;
-}
-
-.needle svg {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
 
 .pointer {
   position: absolute;
@@ -449,16 +434,12 @@ body {
 <text x="296" y="200" dy="0.35em" text-anchor="middle" font-size="34" font-weight="600" fill="#ffffff">东</text>
 <text x="200" y="296" dy="0.35em" text-anchor="middle" font-size="34" font-weight="600" fill="#ffffff">南</text>
 <text x="104" y="200" dy="0.35em" text-anchor="middle" font-size="34" font-weight="600" fill="#ffffff">西</text>
-
-</svg>
-        </div>
-        <div class="needle" aria-hidden="true">
-<svg viewBox="0 0 400 400" width="100%" height="100%">
 <polygon points="191,200 209,200 200,78" fill="#ff453a"/>
+<polygon points="191,200 209,200 200,322" fill="#e5e5ea"/>
 <circle cx="200" cy="200" r="13" fill="#1c1c1e" stroke="#ffffff" stroke-width="2"/>
 </svg>
         </div>
-<div class="pointer" aria-hidden="true"></div>
+        <div class="pointer" aria-hidden="true"></div>
       </div>
       <div class="level-hint" id="levelHint">将手机水平放置</div>
         <button id="enableBtn" class="enable-btn" type="button">点击启用方向</button>
@@ -498,6 +479,11 @@ body {
   };
 
   var heading = null;
+  var gestureBound = false;
+  var orientationState = "unknown";
+  var sawOrientationEvent = false;
+  var sawCompassData = false;
+  var checkCount = 0;
   var demoMode = /[?&]demo=1/.test(window.location.search);
 
   window.addEventListener("error", function (e) {
@@ -535,6 +521,7 @@ body {
   }
 
   function onOrientation(e) {
+    sawOrientationEvent = true;
     var h = null;
     if (typeof e.webkitCompassHeading === "number" && !isNaN(e.webkitCompassHeading)) {
       h = e.webkitCompassHeading;
@@ -544,6 +531,7 @@ body {
     if (h === null) {
       return;
     }
+    sawCompassData = true;
     updateHeading(h);
 
     var tilted = false;
@@ -613,7 +601,17 @@ body {
   }
 
       /* ---------- 方向权限 ---------- */
-    /* ---------- 方向权限（每次打开都需点击按钮） ---------- */
+  var GRANT_FLAG = "ttcompass-orientation-granted";
+
+  function rememberGrant() {
+    try { localStorage.setItem(GRANT_FLAG, "1"); } catch (ignore) {}
+  }
+
+  function wasGrantedBefore() {
+    try { return localStorage.getItem(GRANT_FLAG) === "1"; } catch (ignore) {
+      return false;
+    }
+  }
 
   function hasRequestPermission() {
     return typeof DeviceOrientationEvent !== "undefined" &&
@@ -625,7 +623,7 @@ body {
       return;
     }
     els.enableBtn.classList.add("visible");
-    showHint("点击下方黄色按钮，启用方向", "action");
+    showHint("点击下方黄色按钮，允许「运动与方向」权限", "action");
   }
 
   function hideEnableButton() {
@@ -640,41 +638,33 @@ body {
     }, 6000);
   }
 
-  function attachOrientationListeners() {
-    window.addEventListener("deviceorientation", onOrientation, true);
-    window.addEventListener("deviceorientationabsolute", onOrientation, true);
-  }
-
   function onEnableClick() {
     hideEnableButton();
-    if (typeof DeviceOrientationEvent === "undefined") {
+    if (!hasRequestPermission()) {
       showHint("当前浏览器不支持方向传感器，请用 Safari 打开", "error");
       return;
     }
-    if (hasRequestPermission()) {
-      DeviceOrientationEvent.requestPermission().then(function (state) {
-        if (state === "granted") {
-          attachOrientationListeners();
-          showHint("", null);
-          scheduleNoDataCheck();
-        } else if (state === "denied") {
-          showHint("权限被拒绝：Safari 地址栏点 aA → 网站设置 允许，或清除网站数据后重试", "error");
-          showEnableButton();
-        } else {
-          showEnableButton();
-        }
-      }).catch(function () {
+    DeviceOrientationEvent.requestPermission().then(function (state) {
+      if (state === "granted") {
+        rememberGrant();
+        orientationState = "granted";
+        showHint("", null);
+        scheduleNoDataCheck();
+      } else if (state === "denied") {
+        orientationState = "denied";
+        showHint("权限被拒绝：Safari 地址栏点 aA → 网站设置 允许，或清除网站数据后重试", "error");
+      } else {
         showEnableButton();
-      });
-    } else {
-      attachOrientationListeners();
-      showHint("", null);
-      scheduleNoDataCheck();
-    }
+      }
+    }).catch(function () {
+      showEnableButton();
+    });
   }
 
   function startCompass() {
     startGeolocation();
+    window.addEventListener("deviceorientation", onOrientation, true);
+    window.addEventListener("deviceorientationabsolute", onOrientation, true);
     els.enableBtn.addEventListener("click", onEnableClick);
 
     if (typeof DeviceOrientationEvent === "undefined") {
@@ -682,8 +672,41 @@ body {
       return;
     }
 
-    // 每次打开都显示按钮，点击后才请求权限并绑定方向事件
-    showEnableButton();
+    // 已授权过：直接监听事件，不弹任何按钮
+    if (wasGrantedBefore()) {
+      orientationState = "granted";
+      scheduleNoDataCheck();
+      return;
+    }
+
+    if (hasRequestPermission()) {
+      // 自动请求权限；若 2.5 秒内没拿到方向数据（如 iOS 要求手势触发），再显示按钮兜底
+      window.setTimeout(function () {
+        if (heading === null && !demoMode && orientationState === "unknown") {
+          showEnableButton();
+        }
+      }, 2500);
+      DeviceOrientationEvent.requestPermission().then(function (state) {
+        if (state === "granted") {
+          rememberGrant();
+          orientationState = "granted";
+          scheduleNoDataCheck();
+        } else if (state === "denied") {
+          orientationState = "denied";
+          showHint("权限被拒绝：Safari 地址栏点 aA → 网站设置 允许，或清除网站数据后重试", "error");
+        } else {
+          showEnableButton();
+        }
+      }).catch(function () {
+        showEnableButton();
+      });
+    } else {
+      window.setTimeout(function () {
+        if (heading === null && !demoMode) {
+          showHint("未检测到方向：请检查权限，或改用 Safari 打开", "error");
+        }
+      }, 9000);
+    }
   }
 
   /* ---------- 演示模式（桌面预览） ---------- */
