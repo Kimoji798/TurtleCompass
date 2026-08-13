@@ -30,9 +30,11 @@
 - 方向：优先用 iOS Safari 的 `webkitCompassHeading`，Android 兜底 `deviceorientationabsolute.alpha`。
 - 定位：原生 `navigator.geolocation.watchPosition`，`coords.altitude` 取海拔。
 - 坐标：度分秒（DMS）+ 十进制度双显示。
+- 城市区域：表盘下方显示逆地理编码结果（BigDataCloud 为主、Nominatim 兜底；精度 >1200m 时不解析）。
 - 每次打开都显示黄色按钮，点击后才调用 iOS 13+ 的 `DeviceOrientationEvent.requestPermission()` 并绑定方向事件；无自动请求、无 localStorage 授权记忆（用户明确要求每次点击）。
 - 页内 `window.onerror` 会把 JS 运行错误显示到表盘下方的提示区，便于真机排查。
 - 定位/方向可能需要安全上下文（HTTPS 或 localhost），HTTP 局域网地址可能被浏览器拦截。
+- 界面：html/body 固定黑底（修复底部白边），表盘上移 14px；App 图标为简约风格（黑底白环 + 红针 + 绿色六边形中心），由 `make-icon.py` 生成。
 
 ## 部署（GitHub Pages）
 

@@ -28,14 +28,12 @@ body {
   margin: 0;
   padding: 0;
   height: 100%;
-  background: #000000;
 }
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Helvetica Neue", sans-serif;
   color: var(--text);
   background: radial-gradient(120% 80% at 50% 26%, #2c2c2e 0%, #101012 55%, #000000 100%);
-  background-color: #000000;
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
@@ -85,7 +83,6 @@ body {
 
 .compass-stage {
   position: relative;
-  margin-top: -14px;
   width: 80vw;
   height: 80vw;
   max-width: 360px;
@@ -134,14 +131,6 @@ body {
   width: 100%;
   height: 100%;
   display: block;
-}
-
-.city-line {
-  margin-top: 10px;
-  min-height: 18px;
-  font-size: 14px;
-  color: var(--label);
-  letter-spacing: 1px;
 }
 
 .level-hint {
@@ -449,7 +438,6 @@ body {
       </div>
       <div class="level-hint" id="levelHint">将手机水平放置</div>
         <button id="enableBtn" class="enable-btn" type="button">点击启用方向</button>
-      <div class="city-line" id="cityLine">正在识别位置…</div>
     </main>
 
     <footer class="readout">
@@ -482,12 +470,10 @@ body {
     coordinates: document.getElementById("coordinates"),
     coordinatesDecimal: document.getElementById("coordinatesDecimal"),
     enableBtn: document.getElementById("enableBtn"),
-    levelHint: document.getElementById("levelHint"),
-    cityLine: document.getElementById("cityLine")
+    levelHint: document.getElementById("levelHint")
   };
 
   var heading = null;
-  var geoCoded = false;
   var demoMode = /[?&]demo=1/.test(window.location.search);
 
   window.addEventListener("error", function (e) {
@@ -577,7 +563,6 @@ body {
 
   function onPosition(pos) {
     renderPosition(pos.coords);
-    maybeReverseGeocode(pos);
   }
 
   function onLocationError(err) {
@@ -591,47 +576,7 @@ body {
     els.altitude.textContent = "—";
   }
 
-  /* ---------- 城市区域（逆地理编码） ---------- */
-  function maybeReverseGeocode(pos) {
-    var acc = typeof pos.coords.accuracy === "number" ? pos.coords.accuracy : null;
-    if (geoCoded || (acc !== null && acc > 1200)) {
-      return;
-    }
-    geoCoded = true;
-    reverseGeocode(pos.coords.latitude, pos.coords.longitude);
-  }
-
-  function reverseGeocode(lat, lon) {
-    var url = "https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=" + lat + "&longitude=" + lon + "&localityLanguage=zh";
-    fetch(url).then(function (r) {
-      return r.json();
-    }).then(function (d) {
-      var parts = [];
-      if (d.city) { parts.push(d.city); }
-      if (d.locality && d.locality !== d.city) { parts.push(d.locality); }
-      if (!parts.length && d.principalSubdivision) { parts.push(d.principalSubdivision); }
-      if (!parts.length && d.countryName) { parts.push(d.countryName); }
-      els.cityLine.textContent = parts.length ? parts.join(" ") : "未能识别所在区域";
-    }).catch(function () {
-      var u2 = "https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=" + lat + "&lon=" + lon + "&zoom=12&accept-language=zh-CN";
-      fetch(u2).then(function (r) {
-        return r.json();
-      }).then(function (d) {
-        var a = d.address || {};
-        var parts = [];
-        if (a.city) { parts.push(a.city); }
-        else if (a.town) { parts.push(a.town); }
-        var sub = a.suburb || a.city_district || a.county;
-        if (sub && sub !== parts[0]) { parts.push(sub); }
-        if (!parts.length && a.state) { parts.push(a.state); }
-        els.cityLine.textContent = parts.length ? parts.join(" ") : (a.country || "未能识别所在区域");
-      }).catch(function () {
-        els.cityLine.textContent = "未能识别所在区域";
-      });
-    });
-  }
-
-    function startGeolocation() {
+  function startGeolocation() {
     if (!("geolocation" in navigator)) {
       onLocationError({ message: "此设备不支持定位" });
       return;

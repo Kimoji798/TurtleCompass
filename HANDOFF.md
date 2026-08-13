@@ -47,6 +47,8 @@
     - `Branch "main" is not allowed to deploy due to environment protection rules` → 用户曾手动给仓库环境 `github-pages` 设置 main 分支保护规则，需删除/放行（仓库 Settings → Environments）
     - `Node.js 20 is deprecated` → 无害警告，不影响部署
 12. **部署成功但方向仍无法启用** → 加入 iOS 13+ `DeviceOrientationEvent.requestPermission()` 权限流程，黄色按钮点击触发系统权限弹窗。
+14. **底部白边 + 图标 + 表盘位置 + 城市区域**（2026-08-13）：修复界面底部白色区域（html/body 固定黑底）；图标重设计为简约风格；表盘上移 14px；表盘下方新增当前城市区域显示（逆地理编码，见第 6 节）。
+
 13. **打开要等 + 每次点黄色按钮** → 本轮优化：打开自动请求权限 + `localStorage` 记忆授权 + 2.5 秒兜底按钮（详见第 5 节）；同时海拔字体 22→25px、经纬度 17→19px、经纬间隔 2→3 空格；新增 App 图标（详见第 7 节）。
 
 对应提交（`git log --oneline --reverse`）：`dc7032c`(v0.1 发布) → `73bff83`/`affe325`/`3c4f615`/`a8b0c80`(部署修复系列) → `2a33f9a`(方向权限修复) → `42d9a2e`(权限优化+图标) → `f14cfe1`(权限兜底按钮)。
@@ -68,11 +70,14 @@
 - 经纬度之间间隔：3 个空格（配合 `white-space: pre` 生效），用户嫌小只加一点点
 - 表盘：SVG `viewBox 0 0 400 400`，北东南西大字 + 30° 刻度；中间红/灰指针在独立固定层 `.needle` 中，不随表盘旋转、始终指向手机顶端，长度已缩短避免遮挡北/南文字；表盘顶部白色指示线（向下小箭头）已按用户要求删除；JS 只旋转 `#dial`（`rotate(-heading)`）
 - 配色：黑底 `#000`，标签灰、警示黄 `#ffd60a`（同启用按钮）、错误红 `#ff453a`
+- 底部白边修复：`html, body` 固定黑色背景（曾出现界面底部白色区域，是 html 默认白底露出）
+- 表盘整体上移 14px（`.compass-stage { margin-top: -14px }`）
+- 表盘下方 `.city-line` 显示当前城市区域：BigDataCloud 逆地理编码为主、Nominatim 兜底；定位精度 >1200m 时不解析，避免首次定位误差显示错城市
 - 打开即运行：无启动按钮、无遮罩；页内 `window.onerror` 把 JS 错误显示到表盘下方提示区，便于真机排查
 
 ## 7. App 图标
 
-- `make-icon.py`（Python + PIL）生成三档尺寸：1024 / 180 / 32 px，风格 = 黑色指南针表盘 + 绿色龟壳纹理 + 红白指针，无文字
+- `make-icon.py`（Python + PIL）生成三档尺寸：1024 / 180 / 32 px；2026-08-13 重设计为简约风格 = 纯黑背景 + 白色细圆环 + 四向短刻度 + 红色朝上指针 + 绿色六边形中心（龟壳品牌元素），无文字无纹理
 - 重新生成：`python make-icon.py`
 - `www/index.html` 已加 `<link rel="apple-touch-icon">`（iPhone 添加到主屏幕图标）和 favicon
 
