@@ -513,6 +513,7 @@ body {
 
   function updateHeading(h) {
     heading = h;
+    hideEnableButton();
     els.dial.style.transform = "rotate(" + (-h).toFixed(1) + "deg)";
     els.degree.textContent = Math.round(h) + "°";
     els.direction.textContent = cardinal8(h);
@@ -679,6 +680,12 @@ body {
     }
 
     if (hasRequestPermission()) {
+      // 自动请求权限；若 2.5 秒内没拿到方向数据（如 iOS 要求手势触发），再显示按钮兜底
+      window.setTimeout(function () {
+        if (heading === null && !demoMode && orientationState === "unknown") {
+          showEnableButton();
+        }
+      }, 2500);
       DeviceOrientationEvent.requestPermission().then(function (state) {
         if (state === "granted") {
           rememberGrant();
