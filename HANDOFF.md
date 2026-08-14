@@ -1,7 +1,7 @@
 # 指南龟（TTcompass）工程交接文档
 
 > 写给后续接手的 AI（Claude Code / Codex / Cursor 等）。阅读顺序：工作区根目录 `AGENTS.md` → 本文件 → 按需读 `CLAUDE.md`、`README.md`。
-> 最后更新：2026-08-13（对应本地最新提交 `f14cfe1`）
+> 最后更新：2026-08-14（安卓安装横幅 + 192/512 图标；对应本地最新提交 `f14cfe1`）
 
 ## 1. 工程一句话
 
@@ -23,8 +23,8 @@
 - `deploy.ps1` + `部署到github.bat` — 一键推送 dev + main 并触发 Pages 部署
 - `.github/workflows/pages.yml` — GitHub Pages 自动部署工作流（源目录 `www/`）
 - `make-icon.py` + `icon-1024.png` — App 图标生成脚本与源图
-- `www/icon-1024.png` / `www/icon-180.png` / `www/favicon-32.png` — 各尺寸图标
-- `www/manifest.webmanifest` + `www/sw.js` — PWA 说明与离线缓存（安卓安装成 App / iOS 添加到主屏幕）
+- `www/icon-1024.png` / `www/icon-512.png` / `www/icon-192.png` / `www/icon-180.png` / `www/favicon-32.png` — 各尺寸图标
+- `www/manifest.webmanifest` + `www/sw.js` — PWA 说明与离线缓存（安卓安装成 App：原生安装框 + 手动引导横幅 / iOS 添加到主屏幕）
 - `capacitor.config.json` / `package.json` — Capacitor 原生封装配置（appId `com.turtleworks.turtlecompass`）
 - `CLAUDE.md` — 项目级 AI 指引；`README.md` — 人类可读说明；`commit-msg.txt` — 部署脚本用的提交信息模板
 
@@ -54,7 +54,7 @@
 
 15. **安卓能否打开 / 下载成 App**（2026-08-13）→ 链接本身安卓 Chrome/Edge 可直接打开；为支持「安装成 App」增加 PWA：`www/index.html` 加 manifest 链接与 Service Worker 注册，新增 `www/manifest.webmanifest`（standalone 全屏、黑底、icon-180/icon-1024）与 `www/sw.js`（ttcompass-v1 缓存，网络优先+缓存回退，离线可开）。安卓 Chrome 菜单「安装应用」，iPhone Safari「分享→添加到主屏幕」。
 
-对应提交（`git log --oneline --reverse`）：`dc7032c`(v0.1 发布) → `73bff83`/`affe325`/`3c4f615`/`a8b0c80`(部署修复系列) → `2a33f9a`(方向权限修复) → `42d9a2e`(权限优化+图标) → `f14cfe1`(权限兜底按钮)。
+16. **安卓 QQ 浏览器无「下载成 App」提示**（2026-08-14）→ QQ 浏览器不触发 `beforeinstallprompt`，且 manifest 缺 192/512 图标 → `www/index.html` 增加安卓安装横幅（原生安装框 + 按浏览器检测的手动添加引导弹层，含微信「在浏览器打开」提示，sessionStorage 记录已关闭）；manifest 补齐 192/512/maskable 图标与 `id`/`lang`；`sw.js` 升级 `ttcompass-v2`（导航网络优先、静态资源缓存优先）；`make-icon.py` 改为五档输出。`n`n对应提交（`git log --oneline --reverse`）：`dc7032c`(v0.1 发布) → `73bff83`/`affe325`/`3c4f615`/`a8b0c80`(部署修复系列) → `2a33f9a`(方向权限修复) → `42d9a2e`(权限优化+图标) → `f14cfe1`(权限兜底按钮)。
 
 ## 5. 方向权限状态机（当前行为，改动前必读）
 
@@ -80,7 +80,7 @@
 
 ## 7. App 图标
 
-- `make-icon.py`（Python + PIL）生成三档尺寸：1024 / 180 / 32 px；2026-08-13 重设计为简约风格 = 纯黑背景 + 白色细圆环 + 四向短刻度 + 红色朝上指针 + 绿色六边形中心（龟壳品牌元素），无文字无纹理
+- `make-icon.py`（Python + PIL）生成五档尺寸：1024 / 512 / 192 / 180 / 32 px；2026-08-13 重设计为简约风格 = 纯黑背景 + 白色细圆环 + 四向短刻度 + 红色朝上指针 + 绿色六边形中心（龟壳品牌元素），无文字无纹理
 - 重新生成：`python make-icon.py`
 - `www/index.html` 已加 `<link rel="apple-touch-icon">`（iPhone 添加到主屏幕图标）和 favicon
 

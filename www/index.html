@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#000000">
   <meta name="apple-mobile-web-app-title" content="指南龟">
   <title>指南龟</title>
   <link rel="apple-touch-icon" href="icon-180.png">
@@ -227,6 +228,136 @@ body {
   display: inline-block;
 }
 
+/* ---------- 安卓安装到桌面 ---------- */
+.install-banner {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px 10px 12px;
+  border-radius: 18px;
+  background: rgba(28, 28, 30, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.65);
+  opacity: 0;
+  transform: translateY(18px);
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.install-banner.visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.install-banner img {
+  width: 44px;
+  height: 44px;
+  border-radius: 11px;
+  flex: 0 0 auto;
+}
+
+.install-banner .install-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.install-banner .install-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.install-banner .install-sub {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--label);
+}
+
+.install-banner .install-go {
+  flex: 0 0 auto;
+  padding: 9px 18px;
+  border: 0;
+  border-radius: 999px;
+  background: #ffd60a;
+  color: #000000;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.install-banner .install-close {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--label);
+  font-size: 17px;
+  line-height: 1;
+  padding: 0;
+}
+
+.install-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  padding: 24px 20px calc(24px + env(safe-area-inset-bottom, 0px));
+  border-radius: 22px 22px 0 0;
+  background: #1c1c1e;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.65);
+  opacity: 0;
+  transform: translateY(100%);
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.install-sheet.visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.install-sheet h3 {
+  margin: 0 0 4px;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.install-sheet .install-browser {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--accent);
+}
+
+.install-sheet ol {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 14px;
+  color: var(--text);
+  line-height: 2;
+}
+
+.install-sheet .install-done {
+  margin-top: 18px;
+  width: 100%;
+  padding: 12px;
+  border: 0;
+  border-radius: 12px;
+  background: #ffd60a;
+  color: #000000;
+  font-size: 15px;
+  font-weight: 600;
+}
   </style>
 </head>
 <body>
@@ -469,6 +600,22 @@ body {
     </footer>
   </div>
 
+  <div class="install-banner" id="installBanner" role="dialog" aria-label="安装指南龟到桌面">
+    <img src="icon-180.png" alt="指南龟图标">
+    <div class="install-text">
+      <div class="install-title">把指南龟装到手机桌面</div>
+      <div class="install-sub">像 App 一样打开，无需浏览器</div>
+    </div>
+    <button class="install-go" id="installGo" type="button">安装</button>
+    <button class="install-close" id="installClose" type="button" aria-label="关闭">×</button>
+  </div>
+
+  <div class="install-sheet" id="installSheet" role="dialog" aria-label="手动安装到桌面">
+    <h3>手动安装到桌面</h3>
+    <p class="install-browser" id="installBrowserName"></p>
+    <ol id="installSteps"></ol>
+    <button class="install-done" id="installDone" type="button">我知道了</button>
+  </div>
   <script>
 (function () {
   "use strict";
@@ -737,7 +884,144 @@ body {
   }
 
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./sw.js");
+    navigator.serviceWorker.register("./sw.js").catch(function () {});
+  }
+
+  /* ---------- 安卓安装到桌面（PWA） ---------- */
+  var installEls = {
+    banner: document.getElementById("installBanner"),
+    goBtn: document.getElementById("installGo"),
+    closeBtn: document.getElementById("installClose"),
+    sheet: document.getElementById("installSheet"),
+    sheetBrowser: document.getElementById("installBrowserName"),
+    sheetSteps: document.getElementById("installSteps"),
+    sheetDone: document.getElementById("installDone")
+  };
+
+  var deferredInstallPrompt = null;
+  var isStandaloneApp = (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || window.navigator.standalone === true;
+  var isAndroid = /android/i.test(navigator.userAgent);
+
+  function installBannerClosed() {
+    try { return window.sessionStorage.getItem("ttc-install-closed") === "1"; } catch (e) { return false; }
+  }
+
+  function showInstallBanner() {
+    if (!isAndroid || isStandaloneApp || installBannerClosed()) { return; }
+    installEls.banner.classList.add("visible");
+  }
+
+  function hideInstallBanner() {
+    installEls.banner.classList.remove("visible");
+  }
+
+  function detectBrowserName() {
+    var ua = navigator.userAgent;
+    if (/MicroMessenger/i.test(ua)) { return "微信"; }
+    if (/MQQBrowser/i.test(ua)) { return "QQ浏览器"; }
+    if (/EdgA\//i.test(ua)) { return "Edge"; }
+    if (/CriOS\//i.test(ua)) { return "Chrome"; }
+    if (/Chrome\//i.test(ua)) { return "Chrome"; }
+    if (/SamsungBrowser/i.test(ua)) { return "三星浏览器"; }
+    if (/MiuiBrowser/i.test(ua)) { return "小米浏览器"; }
+    if (/UCBrowser|UBrowser/i.test(ua)) { return "UC / 夸克"; }
+    if (/Firefox\//i.test(ua)) { return "Firefox"; }
+    return "当前浏览器";
+  }
+
+  function buildInstallSteps() {
+    var name = detectBrowserName();
+    var steps;
+    if (name === "微信") {
+      steps = [
+        "点右上角「···」，选「在浏览器打开」",
+        "在浏览器里点「菜单」（☰ / ⋮ / ···）",
+        "选「安装应用 / 添加到主屏幕 / 添加到桌面」",
+        "回到手机桌面，就能像 App 一样打开指南龟"
+      ];
+    } else if (name === "QQ浏览器") {
+      steps = [
+        "点底部或右上角「☰」菜单",
+        "选「添加到主屏幕 / 添加到桌面」（部分版本在「设置 → 桌面快捷方式」里）",
+        "回到手机桌面，就能像 App 一样打开指南龟"
+      ];
+    } else if (name === "Edge") {
+      steps = [
+        "点底部「···」菜单",
+        "选「添加到手机 / 安装应用」",
+        "回到手机桌面，就能像 App 一样打开指南龟"
+      ];
+    } else if (name === "Chrome") {
+      steps = [
+        "点右上角「⋮」菜单",
+        "选「安装应用 / 添加到主屏幕」",
+        "回到手机桌面，就能像 App 一样打开指南龟"
+      ];
+    } else {
+      steps = [
+        "打开浏览器「菜单」（☰ / ⋮ / ···）",
+        "选「添加到主屏幕 / 添加到桌面 / 安装应用」",
+        "回到手机桌面，就能像 App 一样打开指南龟"
+      ];
+    }
+    return { name: name, steps: steps };
+  }
+
+  function openInstallSheet() {
+    var info = buildInstallSteps();
+    installEls.sheetBrowser.textContent = "已检测到：" + info.name;
+    installEls.sheetSteps.innerHTML = "";
+    info.steps.forEach(function (step) {
+      var li = document.createElement("li");
+      li.textContent = step;
+      installEls.sheetSteps.appendChild(li);
+    });
+    installEls.sheet.classList.add("visible");
+  }
+
+  function closeInstallSheet() {
+    installEls.sheet.classList.remove("visible");
+  }
+
+  installEls.goBtn.addEventListener("click", function () {
+    if (deferredInstallPrompt) {
+      deferredInstallPrompt.prompt();
+      deferredInstallPrompt.userChoice.then(function (choice) {
+        deferredInstallPrompt = null;
+        hideInstallBanner();
+        if (!choice || choice.outcome !== "accepted") {
+          openInstallSheet();
+        }
+      });
+    } else {
+      hideInstallBanner();
+      openInstallSheet();
+    }
+  });
+
+  installEls.closeBtn.addEventListener("click", function () {
+    hideInstallBanner();
+    try { window.sessionStorage.setItem("ttc-install-closed", "1"); } catch (e) {}
+  });
+
+  installEls.sheetDone.addEventListener("click", function () {
+    closeInstallSheet();
+    try { window.sessionStorage.setItem("ttc-install-closed", "1"); } catch (e) {}
+  });
+
+  window.addEventListener("beforeinstallprompt", function (e) {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    showInstallBanner();
+  });
+
+  window.addEventListener("appinstalled", function () {
+    deferredInstallPrompt = null;
+    hideInstallBanner();
+  });
+
+  if (isAndroid && !isStandaloneApp) {
+    window.setTimeout(showInstallBanner, 2500);
   }
 
   init();

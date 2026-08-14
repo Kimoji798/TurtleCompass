@@ -14,7 +14,7 @@ iOS Safari 只允许 HTTPS 页面使用定位和方向传感器，所以推荐�
 2. 双击 `部署到github.bat`，输入仓库名，按回车。
 3. 首次会弹出 GitHub 登录窗口，完成登录（需要 Clash 代理开着）。
 4. 去仓库页面 Settings → Pages → Source 选 **GitHub Actions** → Save（只需设置一次）。
-5. 等 1-2 分钟，手机上打开 `https://kimoji798.github.io/<仓库名>/`，允许「定位」和「运动与方向」权限即可。
+5. 等 1-2 分钟，手机上打开 `https://kimoji798.github.io/<仓库名>/`，允许「定位」和「运动与方向」权限即可。`n6. **安卓装成 App**：用 Chrome / Edge / QQ 浏览器打开同一网址，页面底部会弹出「把指南龟装到手机桌面」，点「安装」；没有原生安装框的浏览器会显示手动「添加到主屏幕」步骤。装好后从桌面图标打开，全屏、可离线。
 
 以后每次改完代码，再双击一次 `部署到github.bat` 就会更新。
 
@@ -27,7 +27,7 @@ iOS Safari 只允许 HTTPS 页面使用定位和方向传感器，所以推荐�
 
 ## 项目结构
 
-- `www/index.html` — 应用本体（CSS / SVG 表盘 / JS 全部内联，单文件即可运行）
+- `www/index.html` — 应用本体（CSS / SVG 表盘 / JS 全部内联，单文件即可运行）`n- `www/manifest.webmanifest` + `www/sw.js` + `www/icon-*.png` — PWA 安装与离线缓存（安卓装到桌面 / iOS 添加到主屏幕）
 - `server.js` + `启动服务器.bat` — 本地测试服务器
 - `deploy.ps1` + `部署到github.bat` — 一键推送到 GitHub（dev + main）并触发 Pages 部署
 - `.github/workflows/pages.yml` — GitHub Pages 自动部署工作流

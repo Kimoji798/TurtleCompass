@@ -35,7 +35,7 @@
 - 页内 `window.onerror` 会把 JS 运行错误显示到表盘下方的提示区，便于真机排查。
 - 定位/方向可能需要安全上下文（HTTPS 或 localhost），HTTP 局域网地址可能被浏览器拦截。
 - 界面：html/body 固定黑底（修复底部白边），表盘上移 14px；App 图标为简约风格（黑底白环 + 红针 + 绿色六边形中心），由 `make-icon.py` 生成。
-- PWA：已加 `www/manifest.webmanifest` + `www/sw.js`，安卓 Chrome「安装应用」/添加到主屏幕，iOS Safari「分享→添加到主屏幕」全屏运行，离线缓存 `ttcompass-v1`。
+- PWA：`www/manifest.webmanifest`（图标 192/512/180/1024）+ `www/sw.js`（缓存 v2）。安卓 `beforeinstallprompt` 触发时显示「安装到桌面」横幅并走原生安装框；QQ 浏览器等不触发时 2.5 秒后仍显示横幅，点击弹出按浏览器（QQ 浏览器/Chrome/Edge/微信）检测的手动添加引导；iOS Safari「分享→添加到主屏幕」。
 
 ## 部署（GitHub Pages）
 

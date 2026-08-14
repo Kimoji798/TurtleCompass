@@ -13,7 +13,7 @@
 
 ## 目录结构
 
-- `www/index.html` — 单文件应用（内联 CSS、SVG 表盘、JS）
+- `www/index.html` — 单文件应用（内联 CSS、SVG 表盘、JS）`n- `www/manifest.webmanifest` + `www/sw.js` + `www/icon-*.png` — PWA 安装（安卓装到桌面）+ 离线缓存`n- `make-icon.py` — 生成全部尺寸图标（1024 / 512 / 192 / 180 / 32）
 - `capacitor.config.json` — Capacitor 配置（appId：`com.turtleworks.turtlecompass`）
 - `package.json` — 原生封装脚本与 Capacitor 依赖
 
@@ -32,7 +32,7 @@
 - 坐标：度分秒（DMS）+ 十进制度双显示。
 - iOS 13+ 的 `DeviceOrientationEvent.requestPermission()` 若未自动授予，会在首次轻触屏幕时重新请求（无遮挡按钮）。
 - 页内 `window.onerror` 会把 JS 运行错误显示到表盘下方的提示区，便于真机排查。
-- 定位/方向可能需要安全上下文（HTTPS 或 localhost），HTTP 局域网地址可能被浏览器拦截。
+- 定位/方向可能需要安全上下文（HTTPS 或 localhost），HTTP 局域网地址可能被浏览器拦截。`n- 安卓 PWA 安装：`beforeinstallprompt` 触发时显示「安装到桌面」横幅并调用原生安装框；QQ 浏览器等不触发时 2.5 秒后仍显示横幅，点击弹出按浏览器检测的手动添加引导（微信内先引导转浏览器）。
 
 ## 部署（GitHub Pages）
 
