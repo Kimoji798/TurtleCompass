@@ -54,7 +54,11 @@
 
 15. **安卓能否打开 / 下载成 App**（2026-08-13）→ 链接本身安卓 Chrome/Edge 可直接打开；为支持「安装成 App」增加 PWA：`www/index.html` 加 manifest 链接与 Service Worker 注册，新增 `www/manifest.webmanifest`（standalone 全屏、黑底、icon-180/icon-1024）与 `www/sw.js`（ttcompass-v1 缓存，网络优先+缓存回退，离线可开）。安卓 Chrome 菜单「安装应用」，iPhone Safari「分享→添加到主屏幕」。
 
-16. **安卓 QQ 浏览器无「下载成 App」提示**（2026-08-14）→ QQ 浏览器不触发 `beforeinstallprompt`，且 manifest 缺 192/512 图标 → `www/index.html` 增加安卓安装横幅（原生安装框 + 按浏览器检测的手动添加引导弹层，含微信「在浏览器打开」提示，sessionStorage 记录已关闭）；manifest 补齐 192/512/maskable 图标与 `id`/`lang`；`sw.js` 升级 `ttcompass-v2`（导航网络优先、静态资源缓存优先）；`make-icon.py` 改为五档输出。`n`n对应提交（`git log --oneline --reverse`）：`dc7032c`(v0.1 发布) → `73bff83`/`affe325`/`3c4f615`/`a8b0c80`(部署修复系列) → `2a33f9a`(方向权限修复) → `42d9a2e`(权限优化+图标) → `f14cfe1`(权限兜底按钮)。
+16. **安卓 QQ 浏览器无「下载成 App」提示**（2026-08-14）→ QQ 浏览器不触发 `beforeinstallprompt`，且 manifest 缺 192/512 图标 → `www/index.html` 增加安卓安装横幅（原生安装框 + 按浏览器检测的手动添加引导弹层，含微信「在浏览器打开」提示，sessionStorage 记录已关闭）；manifest 补齐 192/512/maskable 图标与 `id`/`lang`；`sw.js` 升级 `ttcompass-v2`（导航网络优先、静态资源缓存优先）；`make-icon.py` 改为五档输出。
+
+17. **地区显示不出来 / 加载慢 + 繁体字**（2026-08-16）→ 旧逻辑 `geoCoded` 一次性锁死（失败不再重试）、请求无超时（Nominatim 兜底在国内常超时挂住，界面停在「正在识别位置…」）、且精度 >1200m 时直接跳过 → 重写 `www/index.html` 逆地理编码：BDC 主源 8s 超时 / Nominatim 兜底 6s 超时；失败自动指数退避重试（15s→30s→…→5min）；已有结果后移动 >300m 或每 10 分钟重新识别；精度显著提升时提前重取；demo 模式也真实请求（北京坐标）。繁体字根因已查明：BDC `localityLanguage=zh` 返回的 `locality` 区县名是繁体（实测東城區/黃浦區/油尖旺區），`city` 是简体造成混排，`zh-Hans` 可返回简体（实测东城区）；2026-08-16 已按用户确认改 `zh-Hans` 修复（见第 6 节）。
+
+对应提交（`git log --oneline --reverse`）：`dc7032c`(v0.1 发布) → `73bff83`/`affe325`/`3c4f615`/`a8b0c80`(部署修复系列) → `2a33f9a`(方向权限修复) → `42d9a2e`(权限优化+图标) → `f14cfe1`(权限兜底按钮)。
 
 ## 5. 方向权限状态机（当前行为，改动前必读）
 
@@ -75,7 +79,8 @@
 - 配色：黑底 `#000`，标签灰、警示黄 `#ffd60a`（同启用按钮）、错误红 `#ff453a`
 - 底部白边修复：`html, body` 固定黑色背景（曾出现界面底部白色区域，是 html 默认白底露出）
 - 表盘整体上移 14px（`.compass-stage { margin-top: -14px }`）
-- 表盘下方 `.city-line` 显示当前城市区域：BigDataCloud 逆地理编码为主、Nominatim 兜底；定位精度 >1200m 时不解析，避免首次定位误差显示错城市；字号 25px 灰色（用户试过白色后要求改回）；`margin-top: 48px` 整体下移约 2 行（用户两次要求下移）
+- 表盘下方 `.city-line` 显示当前城市区域：BigDataCloud 逆地理编码为主、Nominatim 兜底；2026-08-16 重写为：主源 8s 超时、兜底 6s 超时，失败自动退避重试（15s 起指数退避至 5 分钟），成功后移动 >300m 或每 10 分钟重新识别，精度显著提升时提前重取；demo 模式也真实逆地理编码（北京坐标）；字号 25px 灰色（用户试过白色后要求改回）；`margin-top: 48px` 整体下移约 2 行（用户两次要求下移）
+- 繁体字修复（2026-08-16，用户确认方案 A）：BDC 请求参数 `localityLanguage=zh` → `zh-Hans`，区县名返回简体（实测东城区）；Nominatim 兜底维持 `accept-language=zh-CN`；港澳台地名也会显示为简体。可选后续加固（未实施）：客户端 opencc-js 繁转简或常见行政区用字映射表。
 - 打开即运行：无启动按钮、无遮罩；页内 `window.onerror` 把 JS 错误显示到表盘下方提示区，便于真机排查
 
 ## 7. App 图标

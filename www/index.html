@@ -635,7 +635,6 @@ body {
   };
 
   var heading = null;
-  var geoCoded = false;
   var demoMode = /[?&]demo=1/.test(window.location.search);
 
   window.addEventListener("error", function (e) {
@@ -740,44 +739,110 @@ body {
   }
 
   /* ---------- 城市区域（逆地理编码） ---------- */
+  var geoState = {
+    inFlight: false,
+    hasRegion: false,
+    at: 0,
+    pos: null,
+    acc: null,
+    failCount: 0,
+    lastFailAt: 0
+  };
+
+  function fetchJson(url, timeoutMs) {
+    var ctrl = "AbortController" in window ? new AbortController() : null;
+    var timer = ctrl ? window.setTimeout(function () { ctrl.abort(); }, timeoutMs) : null;
+    return fetch(url, {
+      cache: "no-store",
+      signal: ctrl ? ctrl.signal : undefined
+    }).then(function (r) {
+      if (!r.ok) { throw new Error("HTTP " + r.status); }
+      return r.json();
+    }).then(function (d) {
+      if (timer) { window.clearTimeout(timer); }
+      return d;
+    }).catch(function (e) {
+      if (timer) { window.clearTimeout(timer); }
+      throw e;
+    });
+  }
+
   function maybeReverseGeocode(pos) {
-    var acc = typeof pos.coords.accuracy === "number" ? pos.coords.accuracy : null;
-    if (geoCoded || (acc !== null && acc > 1200)) {
+    if (!pos || typeof pos.coords.latitude !== "number" || typeof pos.coords.longitude !== "number") {
       return;
     }
-    geoCoded = true;
-    reverseGeocode(pos.coords.latitude, pos.coords.longitude);
+    if (geoState.inFlight) { return; }
+
+    var lat = pos.coords.latitude;
+    var lon = pos.coords.longitude;
+    var acc = typeof pos.coords.accuracy === "number" && pos.coords.accuracy !== null ? pos.coords.accuracy : null;
+    var now = Date.now();
+
+    if (!geoState.hasRegion && geoState.failCount > 0) {
+      var cooldown = Math.min(15000 * Math.pow(2, geoState.failCount - 1), 5 * 60 * 1000);
+      if (now - geoState.lastFailAt < cooldown) { return; }
+    } else if (geoState.hasRegion && geoState.pos) {
+      var moved = Math.hypot(lat - geoState.pos.lat, lon - geoState.pos.lon) * 111000;
+      var accMuchBetter = geoState.acc !== null && acc !== null && acc * 4 < geoState.acc;
+      var fresh = now - geoState.at;
+      if (!(accMuchBetter && fresh >= 5000) &&
+          !(moved >= 300 && fresh >= 2 * 60 * 1000) &&
+          !(fresh >= 10 * 60 * 1000)) {
+        return;
+      }
+    }
+
+    geoState.inFlight = true;
+    geoState.at = now;
+    geoState.pos = { lat: lat, lon: lon };
+    geoState.acc = acc;
+    reverseGeocode(lat, lon);
+  }
+
+  function applyRegion(text) {
+    geoState.hasRegion = true;
+    geoState.failCount = 0;
+    els.cityLine.textContent = text;
   }
 
   function reverseGeocode(lat, lon) {
-    var url = "https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=" + lat + "&longitude=" + lon + "&localityLanguage=zh";
-    fetch(url).then(function (r) {
-      return r.json();
-    }).then(function (d) {
+    var url = "https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=" + lat + "&longitude=" + lon + "&localityLanguage=zh-Hans";
+    fetchJson(url, 8000).then(function (d) {
+      if (!d || (d.error && !d.city && !d.locality && !d.principalSubdivision && !d.countryName)) {
+        throw new Error("bad response");
+      }
       var parts = [];
       if (d.city) { parts.push(d.city); }
       if (d.locality && d.locality !== d.city) { parts.push(d.locality); }
       if (!parts.length && d.principalSubdivision) { parts.push(d.principalSubdivision); }
       if (!parts.length && d.countryName) { parts.push(d.countryName); }
-      els.cityLine.textContent = parts.length ? parts.join(" ") : "未能识别所在区域";
+      if (!parts.length) { throw new Error("empty region"); }
+      applyRegion(parts.join(" "));
     }).catch(function () {
       var u2 = "https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=" + lat + "&lon=" + lon + "&zoom=12&accept-language=zh-CN";
-      fetch(u2).then(function (r) {
-        return r.json();
-      }).then(function (d) {
-        var a = d.address || {};
+      return fetchJson(u2, 6000).then(function (d) {
+        var a = (d && d.address) || {};
         var parts = [];
         if (a.city) { parts.push(a.city); }
         else if (a.town) { parts.push(a.town); }
         var sub = a.suburb || a.city_district || a.county;
         if (sub && sub !== parts[0]) { parts.push(sub); }
         if (!parts.length && a.state) { parts.push(a.state); }
-        els.cityLine.textContent = parts.length ? parts.join(" ") : (a.country || "未能识别所在区域");
-      }).catch(function () {
-        els.cityLine.textContent = "未能识别所在区域";
+        var text = parts.length ? parts.join(" ") : (a.country || "");
+        if (!text) { throw new Error("empty region"); }
+        applyRegion(text);
       });
+    }).catch(function () {
+      geoState.failCount += 1;
+      geoState.lastFailAt = Date.now();
+      if (!geoState.hasRegion) {
+        els.cityLine.textContent = "未能识别所在区域（稍后自动重试）";
+      }
+    }).then(function () {
+      geoState.inFlight = false;
     });
   }
+
 
     function startGeolocation() {
     if (!("geolocation" in navigator)) {
@@ -873,6 +938,7 @@ body {
       updateHeading(d);
     }, 40);
     renderPosition({ latitude: 39.90872, longitude: 116.39748, altitude: 44.2, accuracy: 10 });
+    maybeReverseGeocode({ coords: { latitude: 39.90872, longitude: 116.39748, accuracy: 10 } });
   }
 
   function init() {
